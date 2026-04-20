@@ -309,3 +309,78 @@ class TestModelToDictWithViews:
         result = model_to_dict(m, include_views=True)
         assert result["viewpoints"] == []
         assert result["views"] == []
+
+
+class TestProfileAbstractBaseKeys:
+    """Issue #99 — Profiles targeting abstract bases (Element/Relationship/Concept)
+    must serialize and round-trip. INGESTION_PROFILE targets Element, so this is
+    exercised by any library consumer that applies the built-in provenance profile.
+    """
+
+    def test_ingestion_profile_serializes_without_keyerror(self):
+        from etcion import INGESTION_PROFILE, ModelBuilder
+
+        b = ModelBuilder()
+        b.business_actor("Alice")
+        model = b.build(validate=False)
+        model.apply_profile(INGESTION_PROFILE)
+
+        dump = model_to_dict(model)
+
+        assert len(dump["profiles"]) == 1
+        assert dump["profiles"][0]["name"] == "IngestionMetadata"
+        assert "Element" in dump["profiles"][0]["attribute_extensions"]
+
+    def test_ingestion_profile_round_trip(self):
+        from etcion import INGESTION_PROFILE, ModelBuilder
+        from etcion.metamodel.concepts import Element
+
+        b = ModelBuilder()
+        b.business_actor("Alice")
+        model = b.build(validate=False)
+        model.apply_profile(INGESTION_PROFILE)
+
+        restored = model_from_dict(model_to_dict(model))
+
+        assert len(restored.profiles) == 1
+        assert restored.profiles[0].name == "IngestionMetadata"
+        assert Element in restored.profiles[0].attribute_extensions
+        assert set(restored.profiles[0].attribute_extensions[Element]) == {
+            "_provenance_source",
+            "_provenance_confidence",
+            "_provenance_reviewed",
+            "_provenance_timestamp",
+        }
+
+    def test_specializations_on_abstract_base_round_trip(self):
+        from etcion.metamodel.concepts import Element
+        from etcion.metamodel.profiles import Profile
+
+        profile = Profile(name="P", specializations={Element: ["Custom"]})
+        m = Model()
+        m.apply_profile(profile)
+
+        restored = model_from_dict(model_to_dict(m))
+
+        assert restored.profiles[0].specializations == {Element: ["Custom"]}
+
+    def test_mixed_abstract_and_concrete_keys_round_trip(self):
+        from etcion.metamodel.business import BusinessActor
+        from etcion.metamodel.concepts import Element
+        from etcion.metamodel.profiles import Profile
+
+        profile = Profile(
+            name="Mixed",
+            attribute_extensions={
+                Element: {"tag": str},
+                BusinessActor: {"cost_centre": str},
+            },
+        )
+        m = Model()
+        m.apply_profile(profile)
+
+        restored = model_from_dict(model_to_dict(m))
+
+        ext = restored.profiles[0].attribute_extensions
+        assert ext[Element] == {"tag": str}
+        assert ext[BusinessActor] == {"cost_centre": str}
