@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `validate_exchange_format` no longer fails at XSD compile time on lxml >= 6.
+  The W3C `xml.xsd` is now bundled locally next to the ArchiMate XSD, the
+  bundled schema's `xs:import` uses a relative `schemaLocation`, and the
+  parser is hardened with `no_network=True`. The `lxml` pin is relaxed to
+  `<7.0`. Closes #101.
+
 ## [0.11.0] - 02 Apr 2026
 
 ### Added
