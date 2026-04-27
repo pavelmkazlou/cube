@@ -216,9 +216,7 @@ def from_csv(
                     )
                 cls = registry[type_name]
                 if not issubclass(cls, Relationship):
-                    raise ValueError(
-                        f"Type '{type_name}' is not a Relationship subclass."
-                    )
+                    raise ValueError(f"Type '{type_name}' is not a Relationship subclass.")
                 source_id = row_copy.pop("source", "").strip()
                 target_id = row_copy.pop("target", "").strip()
                 if source_id not in id_map:
