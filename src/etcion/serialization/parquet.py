@@ -34,11 +34,11 @@ def to_parquet(model: Model, path: str | Path) -> None:
 
     elements_df, relationships_df = to_dataframe(model)
     base = Path(path)
-    pq.write_table(
+    pq.write_table(  # type: ignore[no-untyped-call, unused-ignore]
         pa.Table.from_pandas(elements_df),
         str(base.parent / f"{base.name}_elements.parquet"),
     )
-    pq.write_table(
+    pq.write_table(  # type: ignore[no-untyped-call, unused-ignore]
         pa.Table.from_pandas(relationships_df),
         str(base.parent / f"{base.name}_relationships.parquet"),
     )

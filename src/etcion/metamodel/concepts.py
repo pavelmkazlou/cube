@@ -107,6 +107,7 @@ class Relationship(AttributeMixin, Concept):
     Reference: ArchiMate 3.2 Specification, Section 3.1.
     """
 
+    name: str = ""
     source: Concept
     target: Concept
     is_derived: bool = False

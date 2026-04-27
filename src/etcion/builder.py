@@ -196,9 +196,10 @@ def _relationship_factory(cls: type[Relationship]) -> Any:  # noqa: ANN401
     - Stores the instance in the builder's internal registry.
     - Returns the instance.
 
-    ``name`` defaults to ``""`` because :class:`~etcion.metamodel.mixins.AttributeMixin`
-    declares it as a required field on both Element and Relationship.  Callers
-    may pass an explicit name via keyword argument.
+    ``name`` defaults to ``""`` -- :class:`~etcion.metamodel.concepts.Relationship`
+    makes ``name`` optional with an empty-string default, matching the ArchiMate
+    Exchange Format which permits unnamed relationships.  Callers may pass an
+    explicit name via keyword argument.
     """
 
     def factory(
@@ -212,7 +213,7 @@ def _relationship_factory(cls: type[Relationship]) -> Any:  # noqa: ANN401
         self._check_not_built()
         src = self._resolve(source)
         tgt = self._resolve(target)
-        rel: cls = cls(source=src, target=tgt, name=name, **kwargs)  # type: ignore[call-arg, valid-type]
+        rel: cls = cls(source=src, target=tgt, name=name, **kwargs)  # type: ignore[valid-type]
         self._concepts.append(rel)
         self._id_map[rel.id] = rel  # type: ignore[attr-defined]
         return rel

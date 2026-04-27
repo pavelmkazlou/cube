@@ -12,8 +12,20 @@ from etcion.metamodel.model import Model
 from etcion.metamodel.profiles import Profile
 from etcion.serialization.registry import TYPE_REGISTRY
 
-# Reverse lookup: _type_name string -> concrete class
+# Reverse lookup: _type_name string -> concrete class (used for _type discriminator
+# resolution on elements and relationships).
 _NAME_TO_TYPE: dict[str, type[Concept]] = {desc.xml_tag: cls for cls, desc in TYPE_REGISTRY.items()}
+
+# Element is a legal Profile key (e.g. INGESTION_PROFILE targets Element) but is
+# deliberately absent from TYPE_REGISTRY because it has no XML tag. Profile.
+# _validate_profile rejects any key that isn't a subclass of Element, so sibling
+# abstracts (Concept, Relationship) cannot reach the serializer. Used only by
+# _serialize_profile / _deserialize_profile.
+_ABSTRACT_BASE_NAMES: dict[type, str] = {Element: "Element"}
+_NAME_TO_TYPE_PROFILE: dict[str, type[Concept]] = {
+    **_NAME_TO_TYPE,
+    **{name: cls for cls, name in _ABSTRACT_BASE_NAMES.items()},
+}
 
 
 def _serialize_profile(profile: Profile) -> dict[str, Any]:
@@ -28,6 +40,7 @@ def _serialize_profile(profile: Profile) -> dict[str, Any]:
     ``__name__`` string and all other constraint keys are preserved verbatim.
     """
     type_to_name: dict[type, str] = {cls: desc.xml_tag for cls, desc in TYPE_REGISTRY.items()}
+    type_to_name.update(_ABSTRACT_BASE_NAMES)
 
     serialized_specs: dict[str, list[str]] = {}
     for cls, names in profile.specializations.items():
@@ -70,11 +83,11 @@ def _deserialize_profile(data: dict[str, Any]) -> Profile:
 
     specs: dict[type[Element], list[str]] = {}
     for type_name, names in data.get("specializations", {}).items():
-        specs[_NAME_TO_TYPE[type_name]] = names  # type: ignore[index]
+        specs[_NAME_TO_TYPE_PROFILE[type_name]] = names  # type: ignore[index]
 
     attrs: dict[type[Element], dict[str, Any]] = {}
     for type_name, attr_map in data.get("attribute_extensions", {}).items():
-        cls = _NAME_TO_TYPE[type_name]
+        cls = _NAME_TO_TYPE_PROFILE[type_name]
         resolved_map: dict[str, Any] = {}
         for attr_name, raw_value in attr_map.items():
             if isinstance(raw_value, str):

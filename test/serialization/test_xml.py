@@ -600,6 +600,33 @@ class TestXsdValidation:
         with pytest.raises(FileNotFoundError):
             validate_exchange_format(tree)
 
+    def test_bundled_xml_xsd_present(self) -> None:
+        """W3C xml.xsd must be bundled next to the ArchiMate XSD (regression: #101)."""
+        import etcion.serialization.xml as xml_mod
+
+        bundled = xml_mod._XSD_PATH.parent / "xml.xsd"
+        assert bundled.exists(), f"Bundled xml.xsd missing at {bundled}"
+
+    def test_validate_compiles_schema_offline(
+        self, simple_model: Model, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """XSD compilation must not require network access (regression: #101).
+
+        On lxml >= 6 the previous remote ``schemaLocation`` for ``xml.xsd``
+        caused ``XMLSchemaParseError`` at compile time. The bundled local
+        ``xml.xsd`` plus ``no_network=True`` parser must keep validation
+        working with all sockets blocked.
+        """
+        import socket
+
+        def _no_network(*args, **kwargs):
+            raise OSError("network access blocked by test")
+
+        monkeypatch.setattr(socket, "socket", _no_network)
+        tree = serialize_model(simple_model, model_name="Offline Test")
+        errors = validate_exchange_format(tree)
+        assert errors == [], f"XSD validation errors with network blocked: {errors}"
+
 
 # -- STORY-28.1.8: write_model passes model_name through --
 
