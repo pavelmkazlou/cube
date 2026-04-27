@@ -654,7 +654,8 @@ def validate_exchange_format(tree: etree._ElementTree) -> list[str]:
     """
     if not _XSD_PATH.exists():
         raise FileNotFoundError(f"XSD not found at {_XSD_PATH}")
-    schema = etree.XMLSchema(etree.parse(str(_XSD_PATH)))
+    parser = etree.XMLParser(no_network=True)
+    schema = etree.XMLSchema(etree.parse(str(_XSD_PATH), parser=parser))
     if schema.validate(tree):
         return []
     return [str(e) for e in schema.error_log]

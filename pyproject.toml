@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-xml = ["lxml>=5.0,<6.0"]
+xml = ["lxml>=5.0,<7.0"]
 graph = ["networkx>=3.0,<4.0"]
 dataframe = ["pandas>=2.0"]
 parquet = ["pandas>=2.0", "pyarrow>=14.0"]
@@ -37,7 +37,7 @@ dev = [
     "mypy>=1.10",
     "pydantic>=2.0,<3.0",
     "ruff>=0.4",
-    "lxml>=5.0,<6.0",
+    "lxml>=5.0,<7.0",
     "networkx>=3.0,<4.0",
     "pandas>=2.0",
     "pyarrow>=14.0",
