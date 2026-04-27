@@ -107,10 +107,10 @@ from etcion.metamodel.technology import (
 __all__ = ["from_csv", "to_csv"]
 
 # Lazy name-to-class registry; populated on first call and then cached.
-_NAME_TO_CLASS: dict[str, type] | None = None
+_NAME_TO_CLASS: dict[str, type[Concept]] | None = None
 
 
-def _get_registry() -> dict[str, type]:
+def _get_registry() -> dict[str, type[Concept]]:
     """Return a ClassName -> class mapping for all Concept subclasses.
 
     All metamodel sub-packages are imported at module level (above), so every
@@ -120,7 +120,7 @@ def _get_registry() -> dict[str, type]:
     global _NAME_TO_CLASS
     if _NAME_TO_CLASS is not None:
         return _NAME_TO_CLASS
-    registry: dict[str, type] = {}
+    registry: dict[str, type[Concept]] = {}
 
     def _collect(base: type) -> None:
         for sub in base.__subclasses__():
@@ -215,6 +215,10 @@ def from_csv(
                         "Expected a valid ArchiMate concept class name."
                     )
                 cls = registry[type_name]
+                if not issubclass(cls, Relationship):
+                    raise ValueError(
+                        f"Type '{type_name}' is not a Relationship subclass."
+                    )
                 source_id = row_copy.pop("source", "").strip()
                 target_id = row_copy.pop("target", "").strip()
                 if source_id not in id_map:
