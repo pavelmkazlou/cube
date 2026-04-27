@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from etcion.enums import AccessMode
-from etcion.metamodel.application import ApplicationComponent, DataObject
+from etcion.metamodel.application import ApplicationComponent, ApplicationService, DataObject
 from etcion.metamodel.business import BusinessActor, BusinessProcess
 from etcion.metamodel.model import Model
 from etcion.metamodel.relationships import Access, Serving
@@ -227,3 +227,41 @@ class TestToCsv:
         restored_rel_type = type(restored.relationships[0]).__name__
         original_rel_type = type(simple_model.relationships[0]).__name__
         assert restored_rel_type == original_rel_type
+
+    def test_round_trip_relationship_with_empty_name(self, tmp_path: Path) -> None:
+        """to_csv -> from_csv must succeed when a relationship has an empty name.
+
+        Regression: #102. Previously the writer emitted an empty `name` cell and
+        the reader skipped blank cells, causing a pydantic missing-field error.
+        """
+        comp = ApplicationComponent(name="src")
+        svc = ApplicationService(name="tgt")
+        rel = Serving(name="", source=comp, target=svc)
+        m = Model()
+        m.add(comp)
+        m.add(svc)
+        m.add(rel)
+
+        elem_path = tmp_path / "elements.csv"
+        rel_path = tmp_path / "relationships.csv"
+        to_csv(m, elem_path, rel_path)
+
+        restored = from_csv(elem_path, rel_path)
+        assert len(restored.relationships) == 1
+        restored_rel = restored.relationships[0]
+        assert isinstance(restored_rel, Serving)
+        assert restored_rel.name == ""
+
+    def test_round_trip_element_with_empty_name(self, tmp_path: Path) -> None:
+        """from_csv must accept an empty `name` cell on an element row.
+
+        Regression: latent symmetric bug to #102 on the elements branch.
+        """
+        elem_csv = _write(
+            tmp_path,
+            "elements.csv",
+            "type,id,name\nApplicationComponent,id-empty-name-elem,\n",
+        )
+        model = from_csv(elem_csv)
+        assert len(model.elements) == 1
+        assert model.elements[0].name == ""

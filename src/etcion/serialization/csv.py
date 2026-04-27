@@ -179,16 +179,21 @@ def from_csv(
                     f"Unknown type: '{type_name}'. Expected a valid ArchiMate concept class name."
                 )
             cls = registry[type_name]
+            str_fields = {n for n, info in cls.model_fields.items() if info.annotation is str}
             kwargs: dict[str, Any] = {}
             for key, val in row_copy.items():
-                if val is None or val.strip() == "":
+                if val is None:
                     continue
                 val = val.strip()
                 # Map CSV-friendly 'documentation' column to the model field 'description'.
-                if key == "documentation":
-                    kwargs["description"] = val
-                else:
-                    kwargs[key] = val
+                target_field = "description" if key == "documentation" else key
+                if val:
+                    kwargs[target_field] = val
+                elif target_field in str_fields:
+                    # Blank cell for a required str field: pass "" so the writer/reader
+                    # round-trip is symmetric. Skipping would re-trigger the missing-
+                    # field error (issue #102).
+                    kwargs[target_field] = ""
             elem = cls(**kwargs)
             model.add(elem)
             id_map[elem.id] = elem
@@ -216,10 +221,18 @@ def from_csv(
                     raise ValueError(f"Unknown source ID: '{source_id}'")
                 if target_id not in id_map:
                     raise ValueError(f"Unknown target ID: '{target_id}'")
+                str_fields = {n for n, info in cls.model_fields.items() if info.annotation is str}
                 kwargs = {}
                 for key, val in row_copy.items():
-                    if val is not None and val.strip():
-                        kwargs[key] = val.strip()
+                    if val is None:
+                        continue
+                    val = val.strip()
+                    if val:
+                        kwargs[key] = val
+                    elif key in str_fields:
+                        # Blank cell for a required str field (typically `name`):
+                        # pass "" so writer/reader are symmetric (issue #102).
+                        kwargs[key] = ""
                 rel = cls(source=id_map[source_id], target=id_map[target_id], **kwargs)
                 model.add(rel)
 

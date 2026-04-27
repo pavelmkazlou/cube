@@ -97,6 +97,17 @@ class TestRelationshipCommon:
     def test_is_relationship(self, spec: RelSpec) -> None:
         assert issubclass(spec.cls, Relationship)
 
+    def test_name_defaults_to_empty_string(self, spec: RelSpec) -> None:
+        """Constructing a relationship without `name=` must succeed (closes #104).
+
+        ArchiMate Exchange Format makes `<name>` optional on relationships, and
+        the prior required-but-empty-string-accepted behaviour was the worst of
+        both worlds (see issue #104 discussion).
+        """
+        a, b = StubActiveStructure(name="a"), StubActiveStructure(name="b")
+        r = spec.cls(source=a, target=b)
+        assert r.name == ""
+
 
 # ---------------------------------------------------------------------------
 # ABC: StructuralRelationship

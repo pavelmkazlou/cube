@@ -7,8 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Behavior changes
+
+- **`Relationship.name` is now optional and defaults to `""`** (closes #104).
+  Concrete relationship subclasses (`Serving`, `Composition`, `Aggregation`,
+  `Access`, etc.) can now be constructed without an explicit `name=`. The
+  ArchiMate Exchange Format makes `<name>` optional on `<relationship>`, and
+  the existing XML serializer already omitted empty `<name>` elements; the
+  metamodel surface now matches. `Element.name` remains required. See
+  [ADR-049](docs/adr/ADR-049-relationship-name-optional.md).
+
 ### Fixed
 
+- `to_csv` -> `from_csv` round-trip no longer raises `ValidationError` when a
+  relationship has an empty `name`. The reader now distinguishes "column
+  absent from header" from "cell present but empty" for required string
+  fields. Closes #102.
 - `validate_exchange_format` no longer fails at XSD compile time on lxml >= 6.
   The W3C `xml.xsd` is now bundled locally next to the ArchiMate XSD, the
   bundled schema's `xs:import` uses a relative `schemaLocation`, and the

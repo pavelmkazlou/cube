@@ -213,12 +213,17 @@ class TestRelationship:
         """ConcreteRelationship.category == RelationshipCategory.OTHER."""
         assert ConcreteRelationship.category == RelationshipCategory.OTHER
 
-    def test_name_is_required(self) -> None:
-        """ConcreteRelationship() without name raises ValidationError."""
+    def test_name_defaults_to_empty_string(self) -> None:
+        """ConcreteRelationship() without name succeeds and name == "".
+
+        Issue #104: relationships make `<name>` optional in the ArchiMate
+        Exchange Format, so the metamodel defaults `name` to "" rather than
+        treating it as a required field.
+        """
         src = ConcreteElement_2(name="src")
         tgt = ConcreteElement_2(name="tgt")
-        with pytest.raises(ValidationError):
-            ConcreteRelationship(source=src, target=tgt)  # type: ignore[call-arg]
+        rel = ConcreteRelationship(source=src, target=tgt)
+        assert rel.name == ""
 
     def test_name_is_preserved(self) -> None:
         """ConcreteRelationship(name='R1', ...).name == 'R1'."""
